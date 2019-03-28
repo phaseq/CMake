@@ -13,7 +13,7 @@ cmProperty* cmPropertyMap::GetOrCreateProperty(const std::string& name)
   if (it == this->end()) {
     prop = &(*this)[name];
   } else {
-    prop = &(it->second);
+    prop = const_cast<cmProperty*>(&(it->second));
   }
   return prop;
 }

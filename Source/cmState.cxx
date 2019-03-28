@@ -352,7 +352,7 @@ cmPropertyDefinition const* cmState::GetPropertyDefinition(
 bool cmState::IsPropertyDefined(const std::string& name,
                                 cmProperty::ScopeType scope) const
 {
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
     this->PropertyDefinitions.find(scope);
   if (it == this->PropertyDefinitions.end()) {
     return false;
@@ -363,7 +363,7 @@ bool cmState::IsPropertyDefined(const std::string& name,
 bool cmState::IsPropertyChained(const std::string& name,
                                 cmProperty::ScopeType scope) const
 {
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
     this->PropertyDefinitions.find(scope);
   if (it == this->PropertyDefinitions.end()) {
     return false;
@@ -448,7 +448,7 @@ void cmState::AddScriptedCommand(std::string const& name, cmCommand* command)
   // if the command already exists, give a new name to the old command.
   if (cmCommand* oldCmd = this->GetCommand(sName)) {
     std::string const newName = "_" + sName;
-    std::map<std::string, cmCommand*>::iterator pos =
+    tsl::hopscotch_map<std::string, cmCommand*>::iterator pos =
       this->ScriptedCommands.find(newName);
     if (pos != this->ScriptedCommands.end()) {
       delete pos->second;
@@ -458,7 +458,7 @@ void cmState::AddScriptedCommand(std::string const& name, cmCommand* command)
   }
 
   // if the command already exists, free the old one
-  std::map<std::string, cmCommand*>::iterator pos =
+  tsl::hopscotch_map<std::string, cmCommand*>::iterator pos =
     this->ScriptedCommands.find(sName);
   if (pos != this->ScriptedCommands.end()) {
     delete pos->second;
@@ -474,7 +474,7 @@ cmCommand* cmState::GetCommand(std::string const& name) const
 
 cmCommand* cmState::GetCommandByExactName(std::string const& name) const
 {
-  std::map<std::string, cmCommand*>::const_iterator pos;
+  tsl::hopscotch_map<std::string, cmCommand*>::const_iterator pos;
   pos = this->ScriptedCommands.find(name);
   if (pos != this->ScriptedCommands.end()) {
     return pos->second;
@@ -506,7 +506,7 @@ std::vector<std::string> cmState::GetCommandNames() const
 void cmState::RemoveBuiltinCommand(std::string const& name)
 {
   assert(name == cmSystemTools::LowerCase(name));
-  std::map<std::string, cmCommand*>::iterator i =
+  tsl::hopscotch_map<std::string, cmCommand*>::iterator i =
     this->BuiltinCommands.find(name);
   assert(i != this->BuiltinCommands.end());
   delete i->second;

@@ -280,7 +280,9 @@ cmListFileContext cmMakefile::GetExecutionContext() const
   cmListFileContext lfc;
   lfc.Name = cur.Name;
   lfc.Line = cur.Line;
-  lfc.FilePath = this->StateSnapshot.GetExecutionListFile();
+  std::string const& curListFile = this->StateSnapshot.GetExecutionListFile();
+  if (lfc.FilePath != curListFile)
+    lfc.FilePath = curListFile;
   return lfc;
 }
 
@@ -3321,9 +3323,6 @@ cmSourceFile* cmMakefile::GetSource(const std::string& sourceName,
 
   cmSourceFileLocation sfl(this, sourceName, kind);
   auto name = this->GetCMakeInstance()->StripExtension(sfl.GetName());
-#if defined(_WIN32) || defined(__APPLE__)
-  name = cmSystemTools::LowerCase(name);
-#endif
   auto sfsi = this->SourceFileSearchIndex.find(name);
   if (sfsi != this->SourceFileSearchIndex.end()) {
     for (auto sf : sfsi->second) {
@@ -3347,9 +3346,6 @@ cmSourceFile* cmMakefile::CreateSource(const std::string& sourceName,
 
   auto name =
     this->GetCMakeInstance()->StripExtension(sf->GetLocation().GetName());
-#if defined(_WIN32) || defined(__APPLE__)
-  name = cmSystemTools::LowerCase(name);
-#endif
   this->SourceFileSearchIndex[name].push_back(sf);
   // for "Known" paths add direct lookup (used for faster lookup in GetSource)
   if (kind == cmSourceFileLocationKind::Known) {

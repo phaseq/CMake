@@ -42,12 +42,7 @@ cmFileCopier::~cmFileCopier() = default;
 cmFileCopier::MatchProperties cmFileCopier::CollectMatchProperties(
   const std::string& file)
 {
-  // Match rules are case-insensitive on some platforms.
-#if defined(_WIN32) || defined(__APPLE__) || defined(__CYGWIN__)
-  const std::string file_to_match = cmSystemTools::LowerCase(file);
-#else
   const std::string& file_to_match = file;
-#endif
 
   // Collect properties from all matching rules.
   bool matched = false;
