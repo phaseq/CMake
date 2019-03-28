@@ -336,7 +336,10 @@ public:
   static bool GetPolicyID(const char* id, /* out */ cmPolicies::PolicyID& pid);
 
   ///! Get the default status for a policy
-  static cmPolicies::PolicyStatus GetPolicyStatus(cmPolicies::PolicyID id);
+  static cmPolicies::PolicyStatus GetPolicyStatus(cmPolicies::PolicyID /*id*/)
+  {
+    return cmPolicies::WARN;
+  }
 
   ///! Set a policy level for this listfile
   static bool ApplyPolicyVersion(cmMakefile* mf,
@@ -358,13 +361,32 @@ public:
   /** Represent a set of policy values.  */
   struct PolicyMap
   {
-    PolicyStatus Get(PolicyID id) const;
+#define POLICY_STATUS_COUNT 3
+
+    PolicyStatus Get(cmPolicies::PolicyID id) const
+    {
+      PolicyStatus status = cmPolicies::WARN;
+
+      if (this->Status[(POLICY_STATUS_COUNT * id) + OLD]) {
+        status = cmPolicies::OLD;
+      } else if (this->Status[(POLICY_STATUS_COUNT * id) + NEW]) {
+        status = cmPolicies::NEW;
+      }
+      return status;
+    }
+
     void Set(PolicyID id, PolicyStatus status);
-    bool IsDefined(PolicyID id) const;
-    bool IsEmpty() const;
+
+    bool IsDefined(cmPolicies::PolicyID id) const
+    {
+      return this->Status[(POLICY_STATUS_COUNT * id) + OLD] ||
+        this->Status[(POLICY_STATUS_COUNT * id) + WARN] ||
+        this->Status[(POLICY_STATUS_COUNT * id) + NEW];
+    }
+
+    bool IsEmpty() const { return this->Status.none(); }
 
   private:
-#define POLICY_STATUS_COUNT 3
     std::bitset<cmPolicies::CMPCOUNT * POLICY_STATUS_COUNT> Status;
   };
 };

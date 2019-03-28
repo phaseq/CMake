@@ -15,7 +15,7 @@ cmDefinitions::Def const& cmDefinitions::GetInternal(const std::string& key,
   assert(begin != end);
   MapType::iterator i = begin->Map.find(key);
   if (i != begin->Map.end()) {
-    i->second.Used = true;
+    const_cast<Def&>(i->second).Used = true;
     return i->second;
   }
   StackIter it = begin;
@@ -57,8 +57,7 @@ bool cmDefinitions::HasKey(const std::string& key, StackIter begin,
 
 void cmDefinitions::Set(const std::string& key, const char* value)
 {
-  Def def(value);
-  this->Map[key] = def;
+  this->Map[key] = Def(value);
 }
 
 std::vector<std::string> cmDefinitions::UnusedKeys() const

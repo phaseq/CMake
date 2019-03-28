@@ -256,11 +256,7 @@ void cmFindLibraryHelper::RegexFromLiteral(std::string& out,
         ch == '^' || ch == '$') {
       out += "\\";
     }
-#if defined(_WIN32) || defined(__APPLE__)
-    out += static_cast<char>(tolower(ch));
-#else
     out += ch;
-#endif
   }
 }
 
@@ -368,11 +364,7 @@ bool cmFindLibraryHelper::CheckDirectoryForName(std::string const& path,
   cmSystemTools::ConvertToUnixSlashes(dir);
   std::set<std::string> const& files = this->GG->GetDirectoryContent(dir);
   for (std::string const& origName : files) {
-#if defined(_WIN32) || defined(__APPLE__)
-    std::string testName = cmSystemTools::LowerCase(origName);
-#else
     std::string const& testName = origName;
-#endif
     if (name.Regex.find(testName)) {
       this->TestPath = path;
       this->TestPath += origName;

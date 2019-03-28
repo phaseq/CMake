@@ -27,10 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 namespace KWSYS_NAMESPACE {
-#if defined(_WIN32) || defined(__APPLE__) || defined(__CYGWIN__)
-// On Windows and Apple, no difference between lower and upper case
-#  define KWSYS_GLOB_CASE_INDEPENDENT
-#endif
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 // Handle network paths
@@ -187,10 +183,9 @@ bool Glob::RecurseDirectory(std::string::size_type start,
   }
   unsigned long cc;
   std::string realname;
-  std::string fname;
   for (cc = 0; cc < d.GetNumberOfFiles(); cc++) {
-    fname = d.GetFile(cc);
-    if (fname == "." || fname == "..") {
+    const char* fname = d.GetFile(cc);
+    if (strcmp(fname, ".") == 0 || strcmp(fname, "..") == 0) {
       continue;
     }
 
@@ -199,11 +194,6 @@ bool Glob::RecurseDirectory(std::string::size_type start,
     } else {
       realname = dir + "/" + fname;
     }
-
-#if defined(KWSYS_GLOB_CASE_INDEPENDENT)
-    // On Windows and Apple, no difference between lower and upper case
-    fname = kwsys::SystemTools::LowerCase(fname);
-#endif
 
     bool isDir = kwsys::SystemTools::FileIsDirectory(realname);
     bool isSymLink = kwsys::SystemTools::FileIsSymlink(realname);
@@ -292,10 +282,9 @@ void Glob::ProcessDirectory(std::string::size_type start,
   }
   unsigned long cc;
   std::string realname;
-  std::string fname;
   for (cc = 0; cc < d.GetNumberOfFiles(); cc++) {
-    fname = d.GetFile(cc);
-    if (fname == "." || fname == "..") {
+    const char* fname = d.GetFile(cc);
+    if (strcmp(fname, ".") == 0 || strcmp(fname, "..") == 0) {
       continue;
     }
 
@@ -304,11 +293,6 @@ void Glob::ProcessDirectory(std::string::size_type start,
     } else {
       realname = dir + "/" + fname;
     }
-
-#if defined(KWSYS_GLOB_CASE_INDEPENDENT)
-    // On case-insensitive file systems convert to lower case for matching.
-    fname = kwsys::SystemTools::LowerCase(fname);
-#endif
 
     // std::cout << "Look at file: " << fname << std::endl;
     // std::cout << "Match: "

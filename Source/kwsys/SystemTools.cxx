@@ -3498,7 +3498,7 @@ std::string SystemTools::CollapseFullPath(const std::string& in_path,
 
   SystemTools::CheckTranslationPath(newPath);
 #ifdef _WIN32
-  newPath = SystemTools::Statics->GetActualCaseForPathCached(newPath);
+  //newPath = SystemTools::Statics->GetActualCaseForPathCached(newPath);
   SystemTools::ConvertToUnixSlashes(newPath);
 #endif
   // Return the reconstructed path.
@@ -3753,17 +3753,7 @@ std::string SystemTools::JoinPath(
 
 bool SystemTools::ComparePath(const std::string& c1, const std::string& c2)
 {
-#if defined(_WIN32) || defined(__APPLE__)
-#  ifdef _MSC_VER
-  return _stricmp(c1.c_str(), c2.c_str()) == 0;
-#  elif defined(__APPLE__) || defined(__GNUC__)
-  return strcasecmp(c1.c_str(), c2.c_str()) == 0;
-#  else
-  return SystemTools::Strucmp(c1.c_str(), c2.c_str()) == 0;
-#  endif
-#else
   return c1 == c2;
-#endif
 }
 
 bool SystemTools::Split(const std::string& str,
