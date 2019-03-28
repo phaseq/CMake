@@ -6,12 +6,13 @@
 #include "cmConfigure.h" // IWYU pragma: keep
 
 #include "cmProperty.h"
+#include "tsl/hopscotch_map.h"
 
 #include <map>
 #include <string>
 #include <vector>
 
-class cmPropertyMap : public std::map<std::string, cmProperty>
+class cmPropertyMap : public tsl::hopscotch_map<std::string, cmProperty>
 {
 public:
   cmProperty* GetOrCreateProperty(const std::string& name);

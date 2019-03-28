@@ -359,13 +359,6 @@ std::string cmPolicies::GetRequiredPolicyError(cmPolicies::PolicyID id)
   return error.str();
 }
 
-//! Get the default status for a policy
-cmPolicies::PolicyStatus cmPolicies::GetPolicyStatus(
-  cmPolicies::PolicyID /*unused*/)
-{
-  return cmPolicies::WARN;
-}
-
 std::string cmPolicies::GetRequiredAlwaysPolicyError(cmPolicies::PolicyID id)
 {
   std::string pid = idToString(id);
@@ -383,35 +376,10 @@ std::string cmPolicies::GetRequiredAlwaysPolicyError(cmPolicies::PolicyID id)
   return e.str();
 }
 
-cmPolicies::PolicyStatus cmPolicies::PolicyMap::Get(
-  cmPolicies::PolicyID id) const
-{
-  PolicyStatus status = cmPolicies::WARN;
-
-  if (this->Status[(POLICY_STATUS_COUNT * id) + OLD]) {
-    status = cmPolicies::OLD;
-  } else if (this->Status[(POLICY_STATUS_COUNT * id) + NEW]) {
-    status = cmPolicies::NEW;
-  }
-  return status;
-}
-
 void cmPolicies::PolicyMap::Set(cmPolicies::PolicyID id,
                                 cmPolicies::PolicyStatus status)
 {
   this->Status[(POLICY_STATUS_COUNT * id) + OLD] = (status == OLD);
   this->Status[(POLICY_STATUS_COUNT * id) + WARN] = (status == WARN);
   this->Status[(POLICY_STATUS_COUNT * id) + NEW] = (status == NEW);
-}
-
-bool cmPolicies::PolicyMap::IsDefined(cmPolicies::PolicyID id) const
-{
-  return this->Status[(POLICY_STATUS_COUNT * id) + OLD] ||
-    this->Status[(POLICY_STATUS_COUNT * id) + WARN] ||
-    this->Status[(POLICY_STATUS_COUNT * id) + NEW];
-}
-
-bool cmPolicies::PolicyMap::IsEmpty() const
-{
-  return this->Status.none();
 }

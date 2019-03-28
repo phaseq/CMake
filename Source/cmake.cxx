@@ -1795,9 +1795,6 @@ std::string cmake::StripExtension(const std::string& file) const
   auto dotpos = file.rfind('.');
   if (dotpos != std::string::npos) {
     auto ext = file.substr(dotpos + 1);
-#if defined(_WIN32) || defined(__APPLE__)
-    ext = cmSystemTools::LowerCase(ext);
-#endif
     if (this->IsSourceExtension(ext) || this->IsHeaderExtension(ext)) {
       return file.substr(0, dotpos);
     }

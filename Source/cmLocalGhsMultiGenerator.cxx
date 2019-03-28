@@ -75,8 +75,8 @@ void cmLocalGhsMultiGenerator::ComputeObjectFilenames(
 
   for (auto const& si : mapping) {
     cmSourceFile const* sf = si.first;
-    std::string objectNameLower = cmSystemTools::LowerCase(
-      cmSystemTools::GetFilenameWithoutLastExtension(sf->GetFullPath()));
+    std::string objectNameLower =
+      cmSystemTools::GetFilenameWithoutLastExtension(sf->GetFullPath());
     objectNameLower += this->GlobalGenerator->GetLanguageOutputExtension(*sf);
     counts[objectNameLower] += 1;
   }
@@ -89,7 +89,7 @@ void cmLocalGhsMultiGenerator::ComputeObjectFilenames(
       cmSystemTools::GetFilenameWithoutLastExtension(sf->GetFullPath());
     objectName += this->GlobalGenerator->GetLanguageOutputExtension(*sf);
 
-    if (counts[cmSystemTools::LowerCase(objectName)] > 1) {
+    if (counts[objectName] > 1) {
       const_cast<cmGeneratorTarget*>(gt)->AddExplicitObjectName(sf);
       bool keptSourceExtension;
       objectName = this->GetObjectFileNameWithoutTarget(*sf, dir_max,

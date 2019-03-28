@@ -502,7 +502,7 @@ cmCacheManager::CacheEntry* cmCacheManager::GetCacheEntry(
 {
   CacheEntryMap::iterator i = this->Cache.find(key);
   if (i != this->Cache.end()) {
-    return &i->second;
+    return &const_cast<CacheEntry&>(i->second);
   }
   return nullptr;
 }

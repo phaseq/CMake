@@ -5,10 +5,11 @@
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
-#include <map>
 #include <set>
 #include <string>
 #include <vector>
+
+#include "tsl/hopscotch_map.h"
 
 #include "cmDefinitions.h"
 #include "cmLinkedTree.h"
@@ -206,10 +207,10 @@ private:
                          const std::string& variable,
                          cmListFileBacktrace const& bt);
 
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap> PropertyDefinitions;
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap> PropertyDefinitions;
   std::vector<std::string> EnabledLanguages;
-  std::map<std::string, cmCommand*> BuiltinCommands;
-  std::map<std::string, cmCommand*> ScriptedCommands;
+  tsl::hopscotch_map<std::string, cmCommand*> BuiltinCommands;
+  tsl::hopscotch_map<std::string, cmCommand*> ScriptedCommands;
   cmPropertyMap GlobalProperties;
   cmCacheManager* CacheManager;
   cmGlobVerificationManager* GlobVerificationManager;

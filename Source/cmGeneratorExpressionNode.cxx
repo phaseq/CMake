@@ -1239,7 +1239,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
     static cmsys::RegularExpression propertyNameValidator("^[A-Za-z0-9_]+$");
 
     cmGeneratorTarget const* target = context->HeadTarget;
-    std::string propertyName = parameters.front();
+    std::string const* propertyName = &parameters.front();
 
     if (parameters.size() == 1) {
       context->HadHeadSensitiveCondition = true;
@@ -1270,10 +1270,10 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
         return std::string();
       }
 
-      std::string targetName = parameters.front();
-      propertyName = parameters[1];
-      if (!cmGeneratorExpression::IsValidTargetName(targetName)) {
-        if (!propertyNameValidator.find(propertyName)) {
+      std::string const* targetName = &parameters.front();
+      propertyName = &parameters[1];
+      if (!cmGeneratorExpression::IsValidTargetName(*targetName)) {
+        if (!propertyNameValidator.find(*propertyName)) {
           ::reportError(context, content->GetOriginalExpression(),
                         "Target name and property name not supported.");
           return std::string();
@@ -1283,16 +1283,16 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
         return std::string();
       }
       static const std::string propALIASED_TARGET = "ALIASED_TARGET";
-      if (propertyName == propALIASED_TARGET) {
-        if (context->LG->GetMakefile()->IsAlias(targetName)) {
+      if (*propertyName == propALIASED_TARGET) {
+        if (context->LG->GetMakefile()->IsAlias(*targetName)) {
           if (cmGeneratorTarget* tgt =
-                context->LG->FindGeneratorTargetToUse(targetName)) {
+                context->LG->FindGeneratorTargetToUse(*targetName)) {
             return tgt->GetName();
           }
         }
         return "";
       }
-      target = context->LG->FindGeneratorTargetToUse(targetName);
+      target = context->LG->FindGeneratorTargetToUse(*targetName);
 
       if (!target) {
         std::ostringstream e;
@@ -1308,13 +1308,13 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
       // The evaluation of the LINK_LIBRARIES generator expressions
       // will check this to ensure that properties have one consistent
       // value for all evaluations.
-      context->SeenTargetProperties.insert(propertyName);
+      context->SeenTargetProperties.insert(*propertyName);
     }
-    if (propertyName == "SOURCES") {
+    if (*propertyName == "SOURCES") {
       context->SourceSensitiveTargets.insert(target);
     }
 
-    if (propertyName.empty()) {
+    if (propertyName->empty()) {
       reportError(
         context, content->GetOriginalExpression(),
         "$<TARGET_PROPERTY:...> expression requires a non-empty property "
@@ -1322,7 +1322,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
       return std::string();
     }
 
-    if (!propertyNameValidator.find(propertyName)) {
+    if (!propertyNameValidator.find(*propertyName)) {
       ::reportError(context, content->GetOriginalExpression(),
                     "Property name not supported.");
       return std::string();
@@ -1330,7 +1330,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
 
     assert(target);
 
-    if (propertyName == "LINKER_LANGUAGE") {
+    if (*propertyName == "LINKER_LANGUAGE") {
       if (target->LinkLanguagePropagatesToDependents() && dagCheckerParent &&
           (dagCheckerParent->EvaluatingLinkLibraries() ||
            dagCheckerParent->EvaluatingSources())) {
@@ -1344,7 +1344,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
     }
 
     cmGeneratorExpressionDAGChecker dagChecker(
-      context->Backtrace, target, propertyName, content, dagCheckerParent);
+      context->Backtrace, target, *propertyName, content, dagCheckerParent);
 
     switch (dagChecker.Check()) {
       case cmGeneratorExpressionDAGChecker::SELF_REFERENCE:
@@ -1356,7 +1356,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
       case cmGeneratorExpressionDAGChecker::ALREADY_SEEN:
         for (size_t i = 1; i < cm::size(targetPropertyTransitiveWhitelist);
              ++i) {
-          if (targetPropertyTransitiveWhitelist[i] == propertyName) {
+          if (targetPropertyTransitiveWhitelist[i] == *propertyName) {
             // No error. We're not going to find anything new here.
             return std::string();
           }
@@ -1365,7 +1365,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
         break;
     }
 
-    const char* prop = target->GetProperty(propertyName);
+    const char* prop = target->GetProperty(*propertyName);
 
     if (dagCheckerParent) {
       if (dagCheckerParent->EvaluatingGenexExpression() ||
@@ -1373,7 +1373,7 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
         // No check required.
       } else if (dagCheckerParent->EvaluatingLinkLibraries()) {
 #define TRANSITIVE_PROPERTY_COMPARE(PROPERTY)                                 \
-  (#PROPERTY == propertyName || "INTERFACE_" #PROPERTY == propertyName) ||
+  (#PROPERTY == *propertyName || "INTERFACE_" #PROPERTY == *propertyName) ||
         if (CM_FOR_EACH_TRANSITIVE_PROPERTY_NAME(
               TRANSITIVE_PROPERTY_COMPARE) false) { // NOLINT(*)
           reportError(
@@ -1403,16 +1403,16 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
     bool isInterfaceProperty = false;
 
 #define POPULATE_INTERFACE_PROPERTY_NAME(prop)                                \
-  if (propertyName == #prop) {                                                \
+  if (*propertyName == #prop) {                                                \
     interfacePropertyName = "INTERFACE_" #prop;                               \
-  } else if (propertyName == "INTERFACE_" #prop) {                            \
+  } else if (*propertyName == "INTERFACE_" #prop) {                            \
     interfacePropertyName = "INTERFACE_" #prop;                               \
     isInterfaceProperty = true;                                               \
   } else
 
     CM_FOR_EACH_TRANSITIVE_PROPERTY_NAME(POPULATE_INTERFACE_PROPERTY_NAME)
     // Note that the above macro terminates with an else
-    /* else */ if (cmHasLiteralPrefix(propertyName, "COMPILE_DEFINITIONS_")) {
+    /* else */ if (cmHasLiteralPrefix(*propertyName, "COMPILE_DEFINITIONS_")) {
       cmPolicies::PolicyStatus polSt =
         context->LG->GetPolicyStatus(cmPolicies::CMP0043);
       if (polSt == cmPolicies::WARN || polSt == cmPolicies::OLD) {
@@ -1446,35 +1446,35 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
           target->GetType() == cmStateEnums::INTERFACE_LIBRARY) {
         return linkedTargetsContent;
       }
-      if (target->IsLinkInterfaceDependentBoolProperty(propertyName,
+      if (target->IsLinkInterfaceDependentBoolProperty(*propertyName,
                                                        context->Config)) {
         context->HadContextSensitiveCondition = true;
-        return target->GetLinkInterfaceDependentBoolProperty(propertyName,
+        return target->GetLinkInterfaceDependentBoolProperty(*propertyName,
                                                              context->Config)
           ? "1"
           : "0";
       }
-      if (target->IsLinkInterfaceDependentStringProperty(propertyName,
+      if (target->IsLinkInterfaceDependentStringProperty(*propertyName,
                                                          context->Config)) {
         context->HadContextSensitiveCondition = true;
         const char* propContent =
-          target->GetLinkInterfaceDependentStringProperty(propertyName,
+          target->GetLinkInterfaceDependentStringProperty(*propertyName,
                                                           context->Config);
         return propContent ? propContent : "";
       }
-      if (target->IsLinkInterfaceDependentNumberMinProperty(propertyName,
+      if (target->IsLinkInterfaceDependentNumberMinProperty(*propertyName,
                                                             context->Config)) {
         context->HadContextSensitiveCondition = true;
         const char* propContent =
-          target->GetLinkInterfaceDependentNumberMinProperty(propertyName,
+          target->GetLinkInterfaceDependentNumberMinProperty(*propertyName,
                                                              context->Config);
         return propContent ? propContent : "";
       }
-      if (target->IsLinkInterfaceDependentNumberMaxProperty(propertyName,
+      if (target->IsLinkInterfaceDependentNumberMaxProperty(*propertyName,
                                                             context->Config)) {
         context->HadContextSensitiveCondition = true;
         const char* propContent =
-          target->GetLinkInterfaceDependentNumberMaxProperty(propertyName,
+          target->GetLinkInterfaceDependentNumberMaxProperty(*propertyName,
                                                              context->Config);
         return propContent ? propContent : "";
       }
@@ -1484,19 +1484,19 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
 
     if (!target->IsImported() && dagCheckerParent &&
         !dagCheckerParent->EvaluatingLinkLibraries()) {
-      if (target->IsLinkInterfaceDependentNumberMinProperty(propertyName,
+      if (target->IsLinkInterfaceDependentNumberMinProperty(*propertyName,
                                                             context->Config)) {
         context->HadContextSensitiveCondition = true;
         const char* propContent =
-          target->GetLinkInterfaceDependentNumberMinProperty(propertyName,
+          target->GetLinkInterfaceDependentNumberMinProperty(*propertyName,
                                                              context->Config);
         return propContent ? propContent : "";
       }
-      if (target->IsLinkInterfaceDependentNumberMaxProperty(propertyName,
+      if (target->IsLinkInterfaceDependentNumberMaxProperty(*propertyName,
                                                             context->Config)) {
         context->HadContextSensitiveCondition = true;
         const char* propContent =
-          target->GetLinkInterfaceDependentNumberMaxProperty(propertyName,
+          target->GetLinkInterfaceDependentNumberMaxProperty(*propertyName,
                                                              context->Config);
         return propContent ? propContent : "";
       }
