@@ -467,12 +467,6 @@ public:
 #endif
 
   /**
-   * Actual implementation of ReplaceString.
-   */
-  static void ReplaceString(std::string& source, const char* replace,
-                            size_t replaceSize, const std::string& with);
-
-  /**
    * Actual implementation of FileIsFullPath.
    */
   static bool FileIsFullPath(const char*, size_t);
@@ -840,66 +834,6 @@ bool SystemTools::MakeDirectory(const std::string& path, const mode_t* mode)
   }
 
   return true;
-}
-
-// replace replace with with as many times as it shows up in source.
-// write the result into source.
-void SystemTools::ReplaceString(std::string& source,
-                                const std::string& replace,
-                                const std::string& with)
-{
-  // do while hangs if replaceSize is 0
-  if (replace.empty()) {
-    return;
-  }
-
-  SystemToolsStatic::ReplaceString(source, replace.c_str(), replace.size(),
-                                   with);
-}
-
-void SystemTools::ReplaceString(std::string& source, const char* replace,
-                                const char* with)
-{
-  // do while hangs if replaceSize is 0
-  if (!*replace) {
-    return;
-  }
-
-  SystemToolsStatic::ReplaceString(source, replace, strlen(replace),
-                                   with ? with : "");
-}
-
-void SystemToolsStatic::ReplaceString(std::string& source, const char* replace,
-                                      size_t replaceSize,
-                                      const std::string& with)
-{
-  const char* src = source.c_str();
-  char* searchPos = const_cast<char*>(strstr(src, replace));
-
-  // get out quick if string is not found
-  if (!searchPos) {
-    return;
-  }
-
-  // perform replacements until done
-  char* orig = strdup(src);
-  char* currentPos = orig;
-  searchPos = searchPos - src + orig;
-
-  // initialize the result
-  source.erase(source.begin(), source.end());
-  do {
-    *searchPos = '\0';
-    source += currentPos;
-    currentPos = searchPos + replaceSize;
-    // replace
-    source += with;
-    searchPos = strstr(currentPos, replace);
-  } while (searchPos);
-
-  // copy any trailing text
-  source += currentPos;
-  free(orig);
 }
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
