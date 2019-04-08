@@ -2224,7 +2224,6 @@ void cmSystemTools::FindCMakeResources(const char* argv0)
     // ???
   }
 #endif
-  exe_dir = cmSystemTools::GetActualCaseForPath(exe_dir);
   cmSystemToolsCMakeCommand = exe_dir;
   cmSystemToolsCMakeCommand += "/cmake";
   cmSystemToolsCMakeCommand += cmSystemTools::GetExecutableExtension();
