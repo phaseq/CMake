@@ -172,7 +172,7 @@ void cmDeleteAll(Range const& r)
 }
 
 template <typename Range>
-std::string cmJoin(Range const& r, const char* delimiter)
+std::string cmJoinT(Range const& r, const char* delimiter)
 {
   if (r.empty()) {
     return std::string();
@@ -188,6 +188,38 @@ std::string cmJoin(Range const& r, const char* delimiter)
   os << *last;
 
   return os.str();
+}
+
+template <typename Range>
+std::string cmJoinT(Range const& r, std::string const& delimiter)
+{
+  return cmJoinT(r, delimiter.c_str());
+}
+
+template <typename Range>
+std::string cmJoin(Range const& r, const char* delimiter)
+{
+  // return cmJoinT(r, delimiter);
+  std::string result;
+  if (r.empty()) {
+    return result;
+  }
+  const int delimiterLength = strlen(delimiter);
+  int length = 0;
+  for (const auto& s : r) {
+    length += s.size() + delimiterLength;
+  }
+  length += 1 - delimiterLength;
+  result.reserve(length);
+
+  auto end = r.end();
+  --end;
+  for (auto it = r.begin(); it != end; ++it) {
+    result.append(*it);
+    result.append(delimiter, delimiterLength);
+  }
+  result.append(*end);
+  return result;
 }
 
 template <typename Range>
@@ -281,7 +313,7 @@ std::string cmWrap(std::string const& prefix, Range const& r,
   if (r.empty()) {
     return std::string();
   }
-  return prefix + cmJoin(r, suffix + sep + prefix) + suffix;
+  return prefix + cmJoinT(r, suffix + sep + prefix) + suffix;
 }
 
 template <typename Range>
