@@ -1596,7 +1596,7 @@ const char* cmTarget::GetProperty(const std::string& prop) const
       }
 
       static std::string output;
-      output = cmJoin(impl->Utilities, ";");
+      output = cmJoinT(impl->Utilities, ";");
       return output.c_str();
     }
     if (prop == propIMPORTED) {
