@@ -1,5 +1,5 @@
 /* Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
-file Copyright.txt or https://cmake.org/licensing for details.  */
+   file Copyright.txt or https://cmake.org/licensing for details.  */
 #include "cmGeneratorExpressionNode.h"
 
 #include "cmAlgorithms.h"
@@ -2359,9 +2359,9 @@ void reportError(cmGeneratorExpressionContext* context,
 
   std::ostringstream e;
   /* clang-format off */
-	e << "Error evaluating generator expression:\n"
-		<< "  " << expr << "\n"
-		<< result;
+  e << "Error evaluating generator expression:\n"
+    << "  " << expr << "\n"
+    << result;
   /* clang-format on */
   context->LG->GetCMakeInstance()->IssueMessage(MessageType::FATAL_ERROR,
                                                 e.str(), context->Backtrace);
