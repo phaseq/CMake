@@ -1194,6 +1194,8 @@ std::string getLinkedTargetsContent(
   std::string linkedTargetsContent;
   std::string sep;
   std::string depString;
+  depString.reserve(85 * libraries.size());
+
   for (T const& l : libraries) {
     // Broken code can have a target in its own link interface.
     // Don't follow such link interface entries so as not to create a
@@ -1403,9 +1405,9 @@ static const struct TargetPropertyNode : public cmGeneratorExpressionNode
     bool isInterfaceProperty = false;
 
 #define POPULATE_INTERFACE_PROPERTY_NAME(prop)                                \
-  if (*propertyName == #prop) {                                                \
+  if (*propertyName == #prop) {                                               \
     interfacePropertyName = "INTERFACE_" #prop;                               \
-  } else if (*propertyName == "INTERFACE_" #prop) {                            \
+  } else if (*propertyName == "INTERFACE_" #prop) {                           \
     interfacePropertyName = "INTERFACE_" #prop;                               \
     isInterfaceProperty = true;                                               \
   } else
