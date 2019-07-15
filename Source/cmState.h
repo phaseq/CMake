@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "tsl/hopscotch_map.h"
+
 #include "cmDefinitions.h"
 #include "cmLinkedTree.h"
 #include "cmListFileCache.h"
@@ -210,10 +212,10 @@ private:
                          const std::string& variable,
                          cmListFileBacktrace const& bt);
 
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap> PropertyDefinitions;
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap> PropertyDefinitions;
   std::vector<std::string> EnabledLanguages;
-  std::map<std::string, std::unique_ptr<cmCommand>> BuiltinCommands;
-  std::map<std::string, std::unique_ptr<cmCommand>> ScriptedCommands;
+  tsl::hopscotch_map<std::string, std::unique_ptr<cmCommand>> BuiltinCommands;
+  tsl::hopscotch_map<std::string, std::unique_ptr<cmCommand>> ScriptedCommands;
   cmPropertyMap GlobalProperties;
   std::unique_ptr<cmCacheManager> CacheManager;
   std::unique_ptr<cmGlobVerificationManager> GlobVerificationManager;

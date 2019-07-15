@@ -349,7 +349,7 @@ cmPropertyDefinition const* cmState::GetPropertyDefinition(
 bool cmState::IsPropertyDefined(const std::string& name,
                                 cmProperty::ScopeType scope) const
 {
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
     this->PropertyDefinitions.find(scope);
   if (it == this->PropertyDefinitions.end()) {
     return false;
@@ -360,7 +360,7 @@ bool cmState::IsPropertyDefined(const std::string& name,
 bool cmState::IsPropertyChained(const std::string& name,
                                 cmProperty::ScopeType scope) const
 {
-  std::map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
+  tsl::hopscotch_map<cmProperty::ScopeType, cmPropertyDefinitionMap>::const_iterator it =
     this->PropertyDefinitions.find(scope);
   if (it == this->PropertyDefinitions.end()) {
     return false;
@@ -465,7 +465,7 @@ void cmState::AddScriptedCommand(std::string const& name,
     this->ScriptedCommands.erase(pos);
   }
   this->ScriptedCommands.insert(
-    std::map<std::string, std::unique_ptr<cmCommand>>::value_type(
+    tsl::hopscotch_map<std::string, std::unique_ptr<cmCommand>>::value_type(
       sName, std::move(command)));
 }
 

@@ -1325,11 +1325,12 @@ std::vector<BT<cmSourceFile*>> cmGeneratorTarget::GetSourceFiles(
 void cmGeneratorTarget::GetSourceFilesWithoutObjectLibraries(
   std::vector<cmSourceFile*>& files, const std::string& config) const
 {
-  std::vector<BT<cmSourceFile*>> tmp =
-    this->GetSourceFilesWithoutObjectLibraries(config);
-  files.reserve(tmp.size());
-  for (BT<cmSourceFile*>& v : tmp) {
-    files.push_back(v.Value);
+  KindedSources const& kinded = this->GetKindedSources(config);
+  files.reserve(kinded.Sources.size());
+  for (SourceAndKind const& si : kinded.Sources) {
+    if (si.Source.Value->GetObjectLibrary().empty()) {
+      files.push_back(si.Source.Value);
+    }
   }
 }
 
@@ -5614,8 +5615,8 @@ void cmGeneratorTarget::ComputeLinkInterfaceLibraries(
                               hadHeadSensitiveConditionDummy);
       }
       if (ifaceLibs != iface.Libraries) {
-        std::string oldLibraries = cmJoin(impl->Libraries, ";");
-        std::string newLibraries = cmJoin(ifaceLibs, ";");
+        std::string oldLibraries = cmJoinT(impl->Libraries, ";");
+        std::string newLibraries = cmJoinT(ifaceLibs, ";");
         if (oldLibraries.empty()) {
           oldLibraries = "(empty)";
         }

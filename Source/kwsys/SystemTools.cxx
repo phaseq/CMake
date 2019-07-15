@@ -224,13 +224,11 @@ static time_t windows_filetime_to_posix_time(const FILETIME& ft)
 
 inline int Mkdir(const std::string& dir)
 {
-  return _wmkdir(
-    KWSYS_NAMESPACE::Encoding::ToWindowsExtendedPath(dir).c_str());
+  return mkdir(dir.c_str());
 }
 inline int Rmdir(const std::string& dir)
 {
-  return _wrmdir(
-    KWSYS_NAMESPACE::Encoding::ToWindowsExtendedPath(dir).c_str());
+  return rmdir(dir.c_str());
 }
 inline const char* Getcwd(char* buf, unsigned int len)
 {
@@ -461,10 +459,7 @@ public:
   StringMap TranslationMap;
 #endif
 #ifdef _WIN32
-  static std::string GetCasePathName(std::string const& pathIn);
-  static std::string GetActualCaseForPathCached(std::string const& path);
   static const char* GetEnvBuffered(const char* key);
-  std::map<std::string, std::string, SystemToolsPathCaseCmp> PathCaseMap;
   std::map<std::string, std::string> EnvMap;
 #endif
 #ifdef __CYGWIN__
@@ -491,95 +486,6 @@ public:
     const std::vector<std::string>& path = std::vector<std::string>(),
     bool no_system_path = false);
 };
-
-#ifdef _WIN32
-std::string SystemToolsStatic::GetCasePathName(std::string const& pathIn)
-{
-  std::string casePath;
-
-  // First check if the file is relative. We don't fix relative paths since the
-  // real case depends on the root directory and the given path fragment may
-  // have meaning elsewhere in the project.
-  if (!SystemTools::FileIsFullPath(pathIn)) {
-    // This looks unnecessary, but it allows for the return value optimization
-    // since all return paths return the same local variable.
-    casePath = pathIn;
-    return casePath;
-  }
-
-  std::vector<std::string> path_components;
-  SystemTools::SplitPath(pathIn, path_components);
-
-  // Start with root component.
-  std::vector<std::string>::size_type idx = 0;
-  casePath = path_components[idx++];
-  // make sure drive letter is always upper case
-  if (casePath.size() > 1 && casePath[1] == ':') {
-    casePath[0] = toupper(casePath[0]);
-  }
-  const char* sep = "";
-
-  // If network path, fill casePath with server/share so FindFirstFile
-  // will work after that.  Maybe someday call other APIs to get
-  // actual case of servers and shares.
-  if (path_components.size() > 2 && path_components[0] == "//") {
-    casePath += path_components[idx++];
-    casePath += "/";
-    casePath += path_components[idx++];
-    sep = "/";
-  }
-
-  // Convert case of all components that exist.
-  bool converting = true;
-  for (; idx < path_components.size(); idx++) {
-    casePath += sep;
-    sep = "/";
-
-    if (converting) {
-      // If path component contains wildcards, we skip matching
-      // because these filenames are not allowed on windows,
-      // and we do not want to match a different file.
-      if (path_components[idx].find('*') != std::string::npos ||
-          path_components[idx].find('?') != std::string::npos) {
-        converting = false;
-      } else {
-        std::string test_str = casePath;
-        test_str += path_components[idx];
-        WIN32_FIND_DATAW findData;
-        HANDLE hFind =
-          ::FindFirstFileW(Encoding::ToWide(test_str).c_str(), &findData);
-        if (INVALID_HANDLE_VALUE != hFind) {
-          path_components[idx] = Encoding::ToNarrow(findData.cFileName);
-          ::FindClose(hFind);
-        } else {
-          converting = false;
-        }
-      }
-    }
-
-    casePath += path_components[idx];
-  }
-  return casePath;
-}
-
-std::string SystemToolsStatic::GetActualCaseForPathCached(std::string const& p)
-{
-  // Check to see if actual case has already been called
-  // for this path, and the result is stored in the PathCaseMap
-  auto& pcm = SystemTools::Statics->PathCaseMap;
-  {
-    auto itr = pcm.find(p);
-    if (itr != pcm.end()) {
-      return itr->second;
-    }
-  }
-  std::string casePath = SystemToolsStatic::GetCasePathName(p);
-  if (casePath.size() <= MAX_PATH) {
-    pcm[p] = casePath;
-  }
-  return casePath;
-}
-#endif
 
 // adds the elements of the env variable path to the arg passed in
 void SystemTools::GetPath(std::vector<std::string>& path, const char* env)
@@ -883,12 +789,7 @@ const char* SystemTools::GetExecutableExtension()
 
 FILE* SystemTools::Fopen(const std::string& file, const char* mode)
 {
-#ifdef _WIN32
-  return _wfopen(Encoding::ToWindowsExtendedPath(file).c_str(),
-                 Encoding::ToWide(mode).c_str());
-#else
   return fopen(file.c_str(), mode);
-#endif
 }
 
 bool SystemTools::MakeDirectory(const char* path, const mode_t* mode)
@@ -939,66 +840,6 @@ bool SystemTools::MakeDirectory(const std::string& path, const mode_t* mode)
   }
 
   return true;
-}
-
-// replace replace with with as many times as it shows up in source.
-// write the result into source.
-void SystemTools::ReplaceString(std::string& source,
-                                const std::string& replace,
-                                const std::string& with)
-{
-  // do while hangs if replaceSize is 0
-  if (replace.empty()) {
-    return;
-  }
-
-  SystemToolsStatic::ReplaceString(source, replace.c_str(), replace.size(),
-                                   with);
-}
-
-void SystemTools::ReplaceString(std::string& source, const char* replace,
-                                const char* with)
-{
-  // do while hangs if replaceSize is 0
-  if (!*replace) {
-    return;
-  }
-
-  SystemToolsStatic::ReplaceString(source, replace, strlen(replace),
-                                   with ? with : "");
-}
-
-void SystemToolsStatic::ReplaceString(std::string& source, const char* replace,
-                                      size_t replaceSize,
-                                      const std::string& with)
-{
-  const char* src = source.c_str();
-  char* searchPos = const_cast<char*>(strstr(src, replace));
-
-  // get out quick if string is not found
-  if (!searchPos) {
-    return;
-  }
-
-  // perform replacements until done
-  char* orig = strdup(src);
-  char* currentPos = orig;
-  searchPos = searchPos - src + orig;
-
-  // initialize the result
-  source.erase(source.begin(), source.end());
-  do {
-    *searchPos = '\0';
-    source += currentPos;
-    currentPos = searchPos + replaceSize;
-    // replace
-    source += with;
-    searchPos = strstr(currentPos, replace);
-  } while (searchPos);
-
-  // copy any trailing text
-  source += currentPos;
-  free(orig);
 }
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -1307,8 +1148,7 @@ bool SystemTools::PathExists(const std::string& path)
   struct stat st;
   return lstat(path.c_str(), &st) == 0;
 #elif defined(_WIN32)
-  return (GetFileAttributesW(Encoding::ToWindowsExtendedPath(path).c_str()) !=
-          INVALID_FILE_ATTRIBUTES);
+  return (GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES);
 #else
   struct stat st;
   return lstat(path.c_str(), &st) == 0;
@@ -1336,8 +1176,7 @@ bool SystemTools::FileExists(const std::string& filename)
   }
   return access(filename.c_str(), R_OK) == 0;
 #elif defined(_WIN32)
-  DWORD attr =
-    GetFileAttributesW(Encoding::ToWindowsExtendedPath(filename).c_str());
+  /*DWORD attr = GetFileAttributesA(filename.c_str());
   if (attr == INVALID_FILE_ATTRIBUTES) {
     return false;
   }
@@ -1345,9 +1184,8 @@ bool SystemTools::FileExists(const std::string& filename)
   if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
     // Using 0 instead of GENERIC_READ as it allows reading of file attributes
     // even if we do not have permission to read the file itself
-    HANDLE handle =
-      CreateFileW(Encoding::ToWindowsExtendedPath(filename).c_str(), 0, 0,
-                  NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    HANDLE handle = CreateFileA(filename.c_str(), 0, 0, NULL, OPEN_EXISTING,
+                                FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
     if (handle == INVALID_HANDLE_VALUE) {
       return false;
@@ -1356,7 +1194,8 @@ bool SystemTools::FileExists(const std::string& filename)
     CloseHandle(handle);
   }
 
-  return true;
+  return true;*/
+  return access(filename.c_str(), 04) == 0;
 #else
 // SCO OpenServer 5.0.7/3.2's command has 711 permission.
 #  if defined(_SCO_DS)
@@ -1478,9 +1317,9 @@ bool SystemTools::Touch(const std::string& filename, bool create)
     }
   }
 #if defined(_WIN32) && !defined(__CYGWIN__)
-  HANDLE h = CreateFileW(Encoding::ToWindowsExtendedPath(filename).c_str(),
-                         FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0,
-                         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+  HANDLE h =
+    CreateFileA(filename.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_WRITE, 0,
+                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
   if (!h) {
     return false;
   }
@@ -1554,12 +1393,10 @@ bool SystemTools::FileTimeCompare(const std::string& f1, const std::string& f2,
   // Windows version.  Get the modification time from extended file attributes.
   WIN32_FILE_ATTRIBUTE_DATA f1d;
   WIN32_FILE_ATTRIBUTE_DATA f2d;
-  if (!GetFileAttributesExW(Encoding::ToWindowsExtendedPath(f1).c_str(),
-                            GetFileExInfoStandard, &f1d)) {
+  if (!GetFileAttributesExA(f1.c_str(), GetFileExInfoStandard, &f1d)) {
     return false;
   }
-  if (!GetFileAttributesExW(Encoding::ToWindowsExtendedPath(f2).c_str(),
-                            GetFileExInfoStandard, &f2d)) {
+  if (!GetFileAttributesExA(f2.c_str(), GetFileExInfoStandard, &f2d)) {
     return false;
   }
 
@@ -2205,15 +2042,14 @@ bool SystemTools::FilesDiffer(const std::string& source,
 
 #if defined(_WIN32)
   WIN32_FILE_ATTRIBUTE_DATA statSource;
-  if (GetFileAttributesExW(Encoding::ToWindowsExtendedPath(source).c_str(),
-                           GetFileExInfoStandard, &statSource) == 0) {
+  if (GetFileAttributesExA(source.c_str(), GetFileExInfoStandard,
+                           &statSource) == 0) {
     return true;
   }
 
   WIN32_FILE_ATTRIBUTE_DATA statDestination;
-  if (GetFileAttributesExW(
-        Encoding::ToWindowsExtendedPath(destination).c_str(),
-        GetFileExInfoStandard, &statDestination) == 0) {
+  if (GetFileAttributesExA(destination.c_str(), GetFileExInfoStandard,
+                           &statDestination) == 0) {
     return true;
   }
 
@@ -2328,9 +2164,7 @@ static bool CopyFileContentBlockwise(const std::string& source,
 {
 // Open files
 #if defined(_WIN32)
-  kwsys::ifstream fin(
-    Encoding::ToNarrow(Encoding::ToWindowsExtendedPath(source)).c_str(),
-    std::ios::in | std::ios::binary);
+  kwsys::ifstream fin(source.c_str(), std::ios::in | std::ios::binary);
 #else
   kwsys::ifstream fin(source.c_str(), std::ios::in | std::ios::binary);
 #endif
@@ -2345,9 +2179,8 @@ static bool CopyFileContentBlockwise(const std::string& source,
   SystemTools::RemoveFile(destination);
 
 #if defined(_WIN32)
-  kwsys::ofstream fout(
-    Encoding::ToNarrow(Encoding::ToWindowsExtendedPath(destination)).c_str(),
-    std::ios::out | std::ios::trunc | std::ios::binary);
+  kwsys::ofstream fout(destination.c_str(),
+                       std::ios::out | std::ios::trunc | std::ios::binary);
 #else
   kwsys::ofstream fout(destination.c_str(),
                        std::ios::out | std::ios::trunc | std::ios::binary);
@@ -2539,8 +2372,8 @@ unsigned long SystemTools::FileLength(const std::string& filename)
   unsigned long length = 0;
 #ifdef _WIN32
   WIN32_FILE_ATTRIBUTE_DATA fs;
-  if (GetFileAttributesExW(Encoding::ToWindowsExtendedPath(filename).c_str(),
-                           GetFileExInfoStandard, &fs) != 0) {
+  if (GetFileAttributesExA(filename.c_str(), GetFileExInfoStandard, &fs) !=
+      0) {
     /* To support the full 64-bit file size, use fs.nFileSizeHigh
      * and fs.nFileSizeLow to construct the 64 bit size
 
@@ -2574,8 +2407,8 @@ long int SystemTools::ModifiedTime(const std::string& filename)
   long int mt = 0;
 #ifdef _WIN32
   WIN32_FILE_ATTRIBUTE_DATA fs;
-  if (GetFileAttributesExW(Encoding::ToWindowsExtendedPath(filename).c_str(),
-                           GetFileExInfoStandard, &fs) != 0) {
+  if (GetFileAttributesExA(filename.c_str(), GetFileExInfoStandard, &fs) !=
+      0) {
     mt = windows_filetime_to_posix_time(fs.ftLastWriteTime);
   }
 #else
@@ -2593,8 +2426,8 @@ long int SystemTools::CreationTime(const std::string& filename)
   long int ct = 0;
 #ifdef _WIN32
   WIN32_FILE_ATTRIBUTE_DATA fs;
-  if (GetFileAttributesExW(Encoding::ToWindowsExtendedPath(filename).c_str(),
-                           GetFileExInfoStandard, &fs) != 0) {
+  if (GetFileAttributesExA(filename.c_str(), GetFileExInfoStandard, &fs) !=
+      0) {
     ct = windows_filetime_to_posix_time(fs.ftCreationTime);
   }
 #else
@@ -3090,8 +2923,7 @@ bool SystemTools::FileIsDirectory(const std::string& inName)
 
 // Now check the file node type.
 #if defined(_WIN32)
-  DWORD attr =
-    GetFileAttributesW(Encoding::ToWindowsExtendedPath(name).c_str());
+  DWORD attr = GetFileAttributesA(name);
   if (attr != INVALID_FILE_ATTRIBUTES) {
     return (attr & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
@@ -3107,15 +2939,14 @@ bool SystemTools::FileIsDirectory(const std::string& inName)
 bool SystemTools::FileIsSymlink(const std::string& name)
 {
 #if defined(_WIN32)
-  std::wstring path = Encoding::ToWindowsExtendedPath(name);
-  DWORD attr = GetFileAttributesW(path.c_str());
+  DWORD attr = GetFileAttributesA(name.c_str());
   if (attr != INVALID_FILE_ATTRIBUTES) {
     if ((attr & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
       // FILE_ATTRIBUTE_REPARSE_POINT means:
       // * a file or directory that has an associated reparse point, or
       // * a file that is a symbolic link.
-      HANDLE hFile = CreateFileW(
-        path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+      HANDLE hFile = CreateFileA(
+        name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, NULL);
       if (hFile == INVALID_HANDLE_VALUE) {
         return false;
@@ -3472,7 +3303,6 @@ std::string SystemTools::CollapseFullPath(const std::string& in_path,
   SystemTools::CheckTranslationPath(newPath);
 #endif
 #ifdef _WIN32
-  newPath = SystemTools::Statics->GetActualCaseForPathCached(newPath);
   SystemTools::ConvertToUnixSlashes(newPath);
 #endif
   // Return the reconstructed path.
@@ -3554,15 +3384,6 @@ std::string SystemTools::RelativePath(const std::string& local,
     relativePath += fp;
   }
   return relativePath;
-}
-
-std::string SystemTools::GetActualCaseForPath(const std::string& p)
-{
-#ifdef _WIN32
-  return SystemToolsStatic::GetCasePathName(p);
-#else
-  return p;
-#endif
 }
 
 const char* SystemTools::SplitPathRootComponent(const std::string& p,
@@ -3724,17 +3545,7 @@ std::string SystemTools::JoinPath(
 
 bool SystemTools::ComparePath(const std::string& c1, const std::string& c2)
 {
-#if defined(_WIN32) || defined(__APPLE__)
-#  ifdef _MSC_VER
-  return _stricmp(c1.c_str(), c2.c_str()) == 0;
-#  elif defined(__APPLE__) || defined(__GNUC__)
-  return strcasecmp(c1.c_str(), c2.c_str()) == 0;
-#  else
-  return SystemTools::Strucmp(c1.c_str(), c2.c_str()) == 0;
-#  endif
-#else
   return c1 == c2;
-#endif
 }
 
 bool SystemTools::Split(const std::string& str,
@@ -4236,8 +4047,7 @@ bool SystemTools::GetPermissions(const char* file, mode_t& mode)
 bool SystemTools::GetPermissions(const std::string& file, mode_t& mode)
 {
 #if defined(_WIN32)
-  DWORD attr =
-    GetFileAttributesW(Encoding::ToWindowsExtendedPath(file).c_str());
+  DWORD attr = GetFileAttributesA(file.c_str());
   if (attr == INVALID_FILE_ATTRIBUTES) {
     return false;
   }
@@ -4289,12 +4099,7 @@ bool SystemTools::SetPermissions(const std::string& file, mode_t mode,
     umask(currentMask);
     mode &= ~currentMask;
   }
-#ifdef _WIN32
-  if (_wchmod(Encoding::ToWindowsExtendedPath(file).c_str(), mode) < 0)
-#else
-  if (chmod(file.c_str(), mode) < 0)
-#endif
-  {
+  if (chmod(file.c_str(), mode) < 0) {
     return false;
   }
 

@@ -5,6 +5,9 @@
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
+#include "cmProperty.h"
+#include "tsl/hopscotch_map.h"
+
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -13,7 +16,7 @@
 /** \class cmPropertyMap
  * \brief String property map.
  */
-class cmPropertyMap
+class cmPropertyMap : public tsl::hopscotch_map<std::string, cmProperty>
 {
 public:
   // -- General

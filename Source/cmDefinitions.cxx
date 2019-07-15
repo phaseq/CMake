@@ -15,7 +15,7 @@ cmDefinitions::Def const& cmDefinitions::GetInternal(const std::string& key,
   assert(begin != end);
   MapType::iterator i = begin->Map.find(key);
   if (i != begin->Map.end()) {
-    i->second.Used = true;
+    const_cast<Def&>(i->second).Used = true;
     return i->second;
   }
   StackIter it = begin;

@@ -17,19 +17,26 @@
 class cmExpandedCommandArgument
 {
 public:
-  cmExpandedCommandArgument();
-  cmExpandedCommandArgument(std::string value, bool quoted);
+  cmExpandedCommandArgument() = default;
+  cmExpandedCommandArgument(std::string value, bool quoted)
+    : Value(std::move(value))
+    , Quoted(quoted)
+  {
+  }
 
-  std::string const& GetValue() const;
+  std::string const& GetValue() const { return this->Value; }
 
-  bool WasQuoted() const;
+  bool WasQuoted() const { return this->Quoted; }
 
-  bool operator==(const char* value) const;
-  bool operator==(std::string const& value) const;
+  bool operator==(const char* value) const { return this->Value == value; }
+  bool operator==(std::string const& value) const
+  {
+    return this->Value == value;
+  }
 
-  bool empty() const;
+  bool empty() const { return this->Value.empty(); }
 
-  const char* c_str() const;
+  const char* c_str() const { return this->Value.c_str(); }
 
 private:
   std::string Value;

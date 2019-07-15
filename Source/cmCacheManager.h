@@ -74,7 +74,7 @@ public:
     }
     bool Initialized() { return this->GetEntry().Initialized; }
     cmCacheManager& Container;
-    std::map<std::string, CacheEntry>::iterator Position;
+    tsl::hopscotch_map<std::string, CacheEntry>::iterator Position;
     CacheIterator(cmCacheManager& cm)
       : Container(cm)
     {
@@ -90,7 +90,7 @@ public:
 
   private:
     CacheEntry const& GetEntry() const { return this->Position->second; }
-    CacheEntry& GetEntry() { return this->Position->second; }
+    CacheEntry& GetEntry() { return const_cast<CacheEntry&>(this->Position->second); }
   };
 
   //! return an iterator to iterate through the cache map
@@ -212,7 +212,7 @@ protected:
   unsigned int CacheMinorVersion;
 
 private:
-  typedef std::map<std::string, CacheEntry> CacheEntryMap;
+  typedef tsl::hopscotch_map<std::string, CacheEntry> CacheEntryMap;
   static void OutputHelpString(std::ostream& fout,
                                const std::string& helpString);
   static void OutputWarningComment(std::ostream& fout,

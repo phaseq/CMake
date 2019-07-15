@@ -74,9 +74,9 @@ bool cmMacroHelperCommand::InvokeInitialPass(
                                       this->Policies);
 
   // set the value of argc
-  std::ostringstream argcDefStream;
-  argcDefStream << expandedArgs.size();
-  std::string argcDef = argcDefStream.str();
+  char argcDefC[60];
+  itoa(expandedArgs.size(), argcDefC, 10);
+  std::string argcDef(argcDefC);
 
   std::vector<std::string>::const_iterator eit =
     expandedArgs.begin() + (this->Args.size() - 1);
